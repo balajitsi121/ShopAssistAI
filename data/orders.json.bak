@@ -1,0 +1,6 @@
+[
+  {"order_id": "ORD-1001", "status": "Shipped", "item": "Desk lamp", "category": "home", "final_sale": false, "ordered_on": "2026-10-05", "shipped_on": "2026-10-08", "delivered_on": null, "estimated_delivery": "2026-10-16", "total": 2499},
+  {"order_id": "ORD-1002", "status": "Delivered", "item": "Running shoes", "category": "footwear", "final_sale": false, "ordered_on": "2026-10-01", "shipped_on": "2026-10-03", "delivered_on": "2026-10-09", "estimated_delivery": null, "total": 1499},
+  {"order_id": "ORD-1003", "status": "Delivered", "item": "Clearance backpack", "category": "bags", "final_sale": true, "ordered_on": "2026-09-10", "shipped_on": "2026-09-12", "delivered_on": "2026-09-16", "estimated_delivery": null, "total": 899},
+  {"order_id": "ORD-1004", "status": "Processing", "item": "Rain jacket", "category": "apparel", "final_sale": false, "ordered_on": "2026-10-14", "shipped_on": null, "delivered_on": null, "estimated_delivery": null, "total": 3299}
+]

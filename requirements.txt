@@ -1,0 +1,10 @@
+python-dotenv
+openai
+langgraph
+chromadb
+sentence-transformers
+streamlit
+fastapi
+uvicorn
+httpx
+pytest
