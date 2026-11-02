@@ -94,7 +94,7 @@ def run_tool(name: str, raw_arguments: str) -> tuple[str, dict]:
             if not query:
                 result = _error("A search query is required.")
             else:
-                from rag.retrieve import search_policy  # lazy: keeps chromadb optional for tests
+                from rag.retrieve import search_policy  # lazy import: only loaded when the policy is searched
 
                 hits = search_policy(query)
                 sources = [{"source": h["source"], "section": h["section"]} for h in hits]

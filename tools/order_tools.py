@@ -1,8 +1,8 @@
 """Order lookup tool.
 
-By default it reads synthetic sample orders from data/orders.json (CLI / Streamlit demo).
-The HTTP API can instead scope a single request to the signed-in customer's own orders
-(supplied by the trusted WordPress server) with `use_orders(...)`.
+By default it reads synthetic sample orders from data/orders.json.
+The API can instead scope a single request to a signed-in customer's own orders
+(supplied by the calling server) with `use_orders(...)`.
 """
 import json
 from contextlib import contextmanager
@@ -40,5 +40,5 @@ def get_order_details(order_id: str) -> dict | None:
 
 
 def list_orders() -> list[dict]:
-    """Return all orders in scope, newest first (used by the UI sidebar and list_my_orders)."""
+    """Return all orders in scope, newest first (used by list_my_orders)."""
     return sorted(_load_orders().values(), key=lambda o: o.get("ordered_on") or "", reverse=True)

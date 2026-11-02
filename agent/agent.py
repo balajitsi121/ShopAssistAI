@@ -11,6 +11,7 @@ from agent.tool_registry import TOOL_SPECS, run_tool
 load_dotenv()
 
 MAX_STEPS = 5  # execution limit: model calls per question
+DEFAULT_MODEL = "deepseek-v4-flash"  # current DeepSeek name; legacy deepseek-chat was retired on 2026-07-24
 
 SYSTEM_PROMPT = """You are ShopAssist, a customer support assistant for an online store.
 Today's date is {today}. You help with order status, return eligibility and the return policy.
@@ -95,7 +96,7 @@ def run_agent(
     history: earlier turns as [{"role": "user"|"assistant", "content": str}].
     Returns {"answer": str, "trace": [{"tool", "args", "sources"}]}.
     """
-    model = model or os.getenv("LLM_MODEL", "deepseek-flash")
+    model = model or os.getenv("LLM_MODEL") or os.getenv("DEEPSEEK_MODEL") or DEFAULT_MODEL
     if client is None and not os.getenv("DEEPSEEK_API_KEY"):
         return {"answer": "The DeepSeek API key is missing. Add DEEPSEEK_API_KEY to your .env file.", "trace": []}
     try:

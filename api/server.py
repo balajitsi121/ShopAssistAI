@@ -1,6 +1,6 @@
-"""HTTP API around the ShopAssist agent, so other sites (e.g. the WordPress demo) can use it.
+"""HTTP API around the ShopAssist agent.
 
-Run:  uvicorn api.server:app --host 0.0.0.0 --port 8000
+Run locally:  uvicorn api.server:app --reload --port 8000   (docs at http://localhost:8000/docs)
 """
 import hmac
 import os
@@ -26,7 +26,7 @@ class Turn(BaseModel):
 
 
 class OrderIn(BaseModel):
-    """One order of the signed-in customer, as supplied by the trusted WordPress server."""
+    """One order of the signed-in customer, as supplied by the trusted calling server."""
 
     order_id: str = Field(pattern=r"^ORD-\d{3,8}$")
     status: Literal["Processing", "Shipped", "Delivered", "Cancelled"]
@@ -43,7 +43,7 @@ class OrderIn(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
     history: list[Turn] = Field(default_factory=list, max_length=20)
-    # Per-customer mode (used by WordPress). `orders` present (even empty) = only these orders are visible.
+    # Per-customer mode. `orders` present (even empty) = only these orders are visible.
     orders: list[OrderIn] | None = Field(default=None, max_length=50)
     customer_name: str | None = Field(default=None, max_length=100)
 

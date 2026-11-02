@@ -1,18 +1,16 @@
-"""Load the return policy, split it into sections and index them in ChromaDB.
+"""Load the policy documents and split them into sections (the retrieval corpus).
 
-Run once (or after editing the policy):  python -m rag.ingest
+The corpus is small (a few markdown policies), so it is built in memory on first use
+and cached; there is no vector database, model download or index file to maintain.
+
+Check the sections:  python -m rag.ingest
 """
-import os
 import re
+from functools import lru_cache
 from pathlib import Path
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICY_DIR = ROOT / "data" / "policies"
-COLLECTION = "return_policy"
 
 
 def chunk_markdown(text: str, source: str) -> list[dict]:
@@ -26,42 +24,23 @@ def chunk_markdown(text: str, source: str) -> list[dict]:
     return chunks
 
 
-def get_embedding_function():
-    """Sentence Transformers if installed, otherwise Chroma's built-in MiniLM."""
-    from chromadb.utils import embedding_functions
-
-    model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    try:
-        return embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model)
-    except Exception:
-        return embedding_functions.DefaultEmbeddingFunction()
-
-
-def get_client():
-    import chromadb
-
-    return chromadb.PersistentClient(path=str(ROOT / os.getenv("CHROMA_PATH", "chroma_db")))
+@lru_cache(maxsize=1)
+def load_chunks() -> tuple[dict, ...]:
+    """All policy sections from data/policies/*.md (cached for the life of the process)."""
+    chunks: list[dict] = []
+    for path in sorted(POLICY_DIR.glob("*.md")):
+        source = path.stem.replace("_", " ").title()
+        chunks += chunk_markdown(path.read_text(encoding="utf-8"), source=source)
+    return tuple(chunks)
 
 
 def ingest() -> int:
-    """(Re)build the policy index. Returns the number of chunks stored."""
-    chunks = []
-    for path in sorted(POLICY_DIR.glob("*.md")):
-        chunks += chunk_markdown(path.read_text(encoding="utf-8"), source=path.stem.replace("_", " ").title())
-
-    client = get_client()
-    try:
-        client.delete_collection(COLLECTION)
-    except Exception:
-        pass  # collection did not exist yet
-    collection = client.create_collection(COLLECTION, embedding_function=get_embedding_function())
-    collection.add(
-        ids=[f"{c['source']}-{i}" for i, c in enumerate(chunks)],
-        documents=[c["text"] for c in chunks],
-        metadatas=[{"source": c["source"], "section": c["section"]} for c in chunks],
-    )
-    return len(chunks)
+    """Reload the policy files (e.g. after editing them). Returns the number of sections."""
+    load_chunks.cache_clear()
+    return len(load_chunks())
 
 
 if __name__ == "__main__":
-    print(f"Indexed {ingest()} policy sections.")
+    print(f"Loaded {ingest()} policy sections:")
+    for c in load_chunks():
+        print(f"  - [{c['source']}] {c['section']}")

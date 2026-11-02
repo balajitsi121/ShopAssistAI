@@ -1,10 +1,9 @@
-python-dotenv
-openai
-langgraph
-chromadb
-sentence-transformers
-streamlit
-fastapi
-uvicorn
-httpx
-pytest
+# Runtime dependencies for the ShopAssist API (deployed on Render).
+# No embedding model or vector DB: policy search is pure-Python BM25 (rag/retrieve.py),
+# so the service needs no model download and fits Render's free-tier memory.
+# Versions pinned to the set tested with Python 3.11 (36 tests passing).
+python-dotenv==1.2.4
+openai==3.42.1
+langgraph==1.2.19
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
