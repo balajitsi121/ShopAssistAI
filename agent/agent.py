@@ -1,4 +1,5 @@
 """ShopAssist agent: a small LangGraph loop (model -> tools -> model) using the DeepSeek API."""
+import logging
 import os
 from datetime import date
 from typing import TypedDict
@@ -9,6 +10,7 @@ from langgraph.graph import END, StateGraph
 from agent.tool_registry import TOOL_SPECS, run_tool
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 MAX_STEPS = 5  # execution limit: model calls per question
 DEFAULT_MODEL = "deepseek-v4-flash"  # current DeepSeek name; legacy deepseek-chat was retired on 2026-07-24
@@ -87,6 +89,27 @@ def build_graph(client, model: str, customer_context: str = ""):
     return graph.compile()
 
 
+# DeepSeek HTTP status codes -> short hint (https://api-docs.deepseek.com/quick_start/error_codes)
+STATUS_HINTS = {
+    400: "invalid request format",
+    401: "API key rejected - check DEEPSEEK_API_KEY",
+    402: "insufficient balance - top up the DeepSeek account",
+    404: "model or endpoint not found - check LLM_MODEL / DEEPSEEK_BASE_URL",
+    422: "invalid parameters - check LLM_MODEL",
+    429: "rate limit reached - wait and retry",
+    500: "DeepSeek server error",
+    503: "DeepSeek is overloaded",
+}
+
+
+def _describe_error(exc: Exception) -> str:
+    """Error name plus HTTP status and hint, without exposing secrets."""
+    status = getattr(exc, "status_code", None)
+    if status is None:
+        return type(exc).__name__
+    return f"{type(exc).__name__} {status}: {STATUS_HINTS.get(status, 'unexpected response')}"
+
+
 def run_agent(
     history: list[dict], user_message: str, client=None, model: str | None = None, customer_context: str = ""
 ) -> dict:
@@ -106,7 +129,8 @@ def run_agent(
             {"messages": history + [{"role": "user", "content": user_message}], "trace": [], "steps": 0}
         )
     except Exception as exc:  # network, auth or model errors: fail safely
-        return {"answer": f"Sorry, I could not reach the AI service ({type(exc).__name__}). Please try again.", "trace": []}
+        logger.exception("LLM call failed")
+        return {"answer": f"Sorry, I could not reach the AI service ({_describe_error(exc)}). Please try again.", "trace": []}
 
     answer = state["messages"][-1].get("content", "").strip()
     if not answer:
