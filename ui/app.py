@@ -79,7 +79,7 @@ with st.sidebar:
             st.session_state.pending = question
 
     st.caption("SETTINGS")
-    st.text_input("LLM provider", value=f"DeepSeek ({os.getenv('LLM_MODEL') or os.getenv('DEEPSEEK_MODEL') or 'deepseek-v4-flash'})", disabled=True)
+    st.text_input("LLM model", value=os.getenv("LLM_MODEL") or os.getenv("DEEPSEEK_MODEL") or "deepseek-v4-flash", disabled=True)
     show_details = st.checkbox("Show tool calls and sources", value=True)
     if st.button("Clear conversation", use_container_width=True):
         st.session_state.messages = []

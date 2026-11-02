@@ -1,4 +1,8 @@
-"""ShopAssist agent: a small LangGraph loop (model -> tools -> model) using the DeepSeek API."""
+"""ShopAssist agent: a small LangGraph loop (model -> tools -> model).
+
+Works with any OpenAI-compatible chat API that supports tool calling, e.g. DeepSeek or OpenRouter:
+  LLM_API_KEY / LLM_BASE_URL / LLM_MODEL  (DEEPSEEK_API_KEY / DEEPSEEK_BASE_URL / DEEPSEEK_MODEL still work)
+"""
 import logging
 import os
 from datetime import date
@@ -37,12 +41,20 @@ class AgentState(TypedDict):
     steps: int
 
 
+DEFAULT_BASE_URL = "https://api.deepseek.com"
+
+
+def _api_key() -> str:
+    return os.getenv("LLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or ""
+
+
 def get_client():
     from openai import OpenAI
 
     return OpenAI(
-        api_key=os.environ["DEEPSEEK_API_KEY"],
-        base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+        api_key=_api_key(),
+        base_url=os.getenv("LLM_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or DEFAULT_BASE_URL,
+        max_retries=1,
     )
 
 
@@ -89,16 +101,17 @@ def build_graph(client, model: str, customer_context: str = ""):
     return graph.compile()
 
 
-# DeepSeek HTTP status codes -> short hint (https://api-docs.deepseek.com/quick_start/error_codes)
+# HTTP status codes from the LLM provider -> short hint
 STATUS_HINTS = {
-    400: "invalid request format",
-    401: "API key rejected - check DEEPSEEK_API_KEY",
-    402: "insufficient balance - top up the DeepSeek account",
-    404: "model or endpoint not found - check LLM_MODEL / DEEPSEEK_BASE_URL",
+    400: "invalid request - check LLM_MODEL supports tool calling",
+    401: "API key rejected - check LLM_API_KEY",
+    402: "insufficient balance/credits on the LLM account",
+    404: "model or endpoint not found - check LLM_MODEL / LLM_BASE_URL",
     422: "invalid parameters - check LLM_MODEL",
-    429: "rate limit reached - wait and retry",
-    500: "DeepSeek server error",
-    503: "DeepSeek is overloaded",
+    429: "rate limit reached - wait and retry (free tiers have daily limits)",
+    500: "LLM provider server error",
+    502: "LLM provider/model temporarily unavailable",
+    503: "LLM provider is overloaded",
 }
 
 
@@ -120,8 +133,8 @@ def run_agent(
     Returns {"answer": str, "trace": [{"tool", "args", "sources"}]}.
     """
     model = model or os.getenv("LLM_MODEL") or os.getenv("DEEPSEEK_MODEL") or DEFAULT_MODEL
-    if client is None and not os.getenv("DEEPSEEK_API_KEY"):
-        return {"answer": "The DeepSeek API key is missing. Add DEEPSEEK_API_KEY to your .env file.", "trace": []}
+    if client is None and not _api_key():
+        return {"answer": "The AI service API key is missing. Set LLM_API_KEY (or DEEPSEEK_API_KEY).", "trace": []}
     try:
         client = client or get_client()
         graph = build_graph(client, model, customer_context)

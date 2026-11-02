@@ -1,4 +1,6 @@
 # Render Blueprint: deploys the ShopAssist FastAPI service.
+# LLM: any OpenAI-compatible API with tool calling. Defaults below use OpenRouter's free router;
+# for DeepSeek set LLM_BASE_URL=https://api.deepseek.com and LLM_MODEL=deepseek-v4-flash.
 services:
   - type: web
     name: shopassist-api
@@ -10,12 +12,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: DEEPSEEK_API_KEY
+      - key: LLM_API_KEY
         sync: false
-      - key: DEEPSEEK_BASE_URL
-        value: https://api.deepseek.com
+      - key: LLM_BASE_URL
+        value: https://openrouter.ai/api/v1
       - key: LLM_MODEL
-        value: deepseek-v4-flash
+        value: openrouter/free
       - key: SHOPASSIST_API_KEY
         generateValue: true
       - key: ALLOWED_ORIGINS

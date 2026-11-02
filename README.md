@@ -5,7 +5,7 @@ Policy RAG (keyword/BM25 retrieval) + predefined tools + deterministic business 
 
 ## Structure
 - `api/`     FastAPI server (`/health`, `/chat`)
-- `agent/`   LangGraph agent (model -> tools -> model) using the DeepSeek API
+- `agent/`   LangGraph agent (model -> tools -> model) using any OpenAI-compatible LLM API (OpenRouter, DeepSeek)
 - `tools/`   order lookup and return eligibility rules
 - `rag/`     policy chunking and BM25 retrieval (pure Python, no model download)
 - `data/`    sample orders and policy documents
@@ -17,7 +17,7 @@ Policy RAG (keyword/BM25 retrieval) + predefined tools + deterministic business 
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements-dev.txt
-copy .env.example .env      # then add DEEPSEEK_API_KEY
+copy .env.example .env      # then add LLM_API_KEY
 ```
 
 ## Run locally
@@ -51,7 +51,7 @@ the agent then sees only those orders instead of `data/orders.json`.
 2. In Render: New > Blueprint, select this repository. Render reads `render.yaml`
    (build `pip install -r requirements.txt`, start `uvicorn api.server:app --host 0.0.0.0 --port $PORT`,
    health check `/health`, Python 3.11.9).
-3. When prompted, enter `DEEPSEEK_API_KEY`. Set `ALLOWED_ORIGINS` only if a browser calls the API directly;
+3. When prompted, enter `LLM_API_KEY` (OpenRouter key). Set `ALLOWED_ORIGINS` only if a browser calls the API directly;
    leave it blank when the WordPress server calls it server-to-server.
 4. `SHOPASSIST_API_KEY` is generated automatically; copy it from the service's Environment tab into the
    WordPress plugin settings (sent as the `X-API-Key` header).
@@ -59,9 +59,9 @@ the agent then sees only those orders instead of `data/orders.json`.
 
 | Variable | Required | Default |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | yes | - |
-| `DEEPSEEK_BASE_URL` | no | `https://api.deepseek.com` |
-| `LLM_MODEL` (or `DEEPSEEK_MODEL`) | no | `deepseek-v4-flash` |
+| `LLM_API_KEY` (or `DEEPSEEK_API_KEY`) | yes | - |
+| `LLM_BASE_URL` (or `DEEPSEEK_BASE_URL`) | no | `https://api.deepseek.com` (render.yaml sets OpenRouter) |
+| `LLM_MODEL` (or `DEEPSEEK_MODEL`) | no | `deepseek-v4-flash` (render.yaml sets `openrouter/free`) |
 | `SHOPASSIST_API_KEY` | recommended | blank = no auth |
 | `ALLOWED_ORIGINS` | no | blank = no browser origins |
 
@@ -70,9 +70,10 @@ the agent then sees only those orders instead of `data/orders.json`.
 the `/chat` REST API, so WordPress must still use the API deployment above.
 - Local: `pip install -r ui/requirements.txt` then `streamlit run ui/app.py`
 - Cloud: New app > repository `main` > main file `ui/app.py` > Python 3.11; in Secrets add
-  `DEEPSEEK_API_KEY = "..."` (and optionally `LLM_MODEL = "deepseek-v4-flash"`).
+  `LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL` (same values as the API).
 
 ## Notes
+- OpenRouter's free router (`openrouter/free`) picks a random free model per request, so answer quality varies, and free usage is rate limited (roughly 50 requests/day without credits). One question can use up to 5 model calls.
 - Policy search runs fully offline: sections are read from `data/policies/*.md` on first use and cached. Add or edit a `.md` file (one `## ` heading per section) and redeploy.
 - Render's free plan sleeps after 15 minutes of inactivity; the next request takes roughly 30 to 60 seconds to wake it.
 - Return rules and the 30-day window are from a draft sample policy pending PM approval.
