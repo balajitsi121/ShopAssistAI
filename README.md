@@ -65,6 +65,13 @@ the agent then sees only those orders instead of `data/orders.json`.
 | `SHOPASSIST_API_KEY` | recommended | blank = no auth |
 | `ALLOWED_ORIGINS` | no | blank = no browser origins |
 
+## Demo UI (Streamlit Community Cloud)
+`ui/app.py` is an optional chat page for demos. It calls the agent directly; it does **not** expose
+the `/chat` REST API, so WordPress must still use the API deployment above.
+- Local: `pip install -r ui/requirements.txt` then `streamlit run ui/app.py`
+- Cloud: New app > repository `main` > main file `ui/app.py` > Python 3.11; in Secrets add
+  `DEEPSEEK_API_KEY = "..."` (and optionally `LLM_MODEL = "deepseek-v4-flash"`).
+
 ## Notes
 - Policy search runs fully offline: sections are read from `data/policies/*.md` on first use and cached. Add or edit a `.md` file (one `## ` heading per section) and redeploy.
 - Render's free plan sleeps after 15 minutes of inactivity; the next request takes roughly 30 to 60 seconds to wake it.
